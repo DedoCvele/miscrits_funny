@@ -1,0 +1,9 @@
+{
+  "match_threshold": 0.7,
+  "click_cooldown": 3.0,
+  "check_interval": 0.2,
+  "click_coordinates": [
+    970,
+    535
+  ]
+}
