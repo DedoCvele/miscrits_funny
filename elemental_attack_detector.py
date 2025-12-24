@@ -38,24 +38,28 @@ import json
 # Configure pyautogui
 pyautogui.FAILSAFE = False
 
-# Path to reference images
-IMAGE_DIR = "image check"
-# Templates for number 4
-TEMPLATE_4_1 = os.path.join(IMAGE_DIR, "check for 4.jpg")
-TEMPLATE_4_2 = os.path.join(IMAGE_DIR, "check for 4(1).png")
-TEMPLATE_4_3 = os.path.join(IMAGE_DIR, "tulipini_4.png")
-# Templates for number 5
-TEMPLATE_5_1 = os.path.join(IMAGE_DIR, "check for 5.png")
-TEMPLATE_5_2 = os.path.join(IMAGE_DIR, "check for 5 (2).png")
-# Special instant-click template for number 4 (highest priority)
-TEMPLATE_ONLY_4 = os.path.join(IMAGE_DIR, "only_4.png")
-CONFIG_FILE = "detector_config.json"
+# Path to reference images (relative to script location)
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+ELEMENTAL_IMAGE_DIR = os.path.join(SCRIPT_DIR, "image check")
+# Physical images are in parent directory
+PARENT_DIR = os.path.dirname(SCRIPT_DIR)
+PHYSICAL_IMAGE_DIR = os.path.join(PARENT_DIR, "pysical_check")
+
+# Elemental templates - priority 6, 5, 4
+ELEMENTAL_6 = os.path.join(ELEMENTAL_IMAGE_DIR, "elemental_6.png")
+ELEMENTAL_5 = os.path.join(ELEMENTAL_IMAGE_DIR, "elemental_5.jpg")
+ELEMENTAL_4 = os.path.join(ELEMENTAL_IMAGE_DIR, "elemental_4.png")
+# Physical templates - priority 6, 5, 4
+PHYSICAL_6 = os.path.join(PHYSICAL_IMAGE_DIR, "pysical_6.jpg")
+PHYSICAL_5 = os.path.join(PHYSICAL_IMAGE_DIR, "pysical_5.jpg")
+PHYSICAL_4 = os.path.join(PHYSICAL_IMAGE_DIR, "pysical_4.png")
+CONFIG_FILE = os.path.join(SCRIPT_DIR, "detector_config.json")
 
 class ElementalAttackDetector:
     def __init__(self, root):
         self.root = root
         self.root.title("Elemental Attack Detector")
-        self.root.geometry("400x250")
+        self.root.geometry("400x280")
         self.root.resizable(False, False)
         
         self.running = False
@@ -63,7 +67,8 @@ class ElementalAttackDetector:
         self.detection_thread = None
         self.mode = None
         self.click_coordinates = None  # Will store where to click
-        self.detection_region = None  # Will store (x, y, width, height) for detection area
+        self.elemental_detection_region = None  # Will store (x, y, width, height) for elemental detection area
+        self.physical_detection_region = None  # Will store (x, y, width, height) for physical detection area
         
         # Configuration settings
         self.match_threshold = 0.7
@@ -73,10 +78,15 @@ class ElementalAttackDetector:
         # Load saved configuration
         self.load_config()
         
-        # Load template images for matching (using lists to support multiple variants)
-        self.templates_4 = []  # List of templates for number 4
-        self.templates_5 = []  # List of templates for number 5
-        self.template_only_4 = None  # Special instant-click template for number 4 (highest priority)
+        # Load template images for matching
+        # Elemental templates - priority 6, 5, 4
+        self.elemental_templates_6 = []
+        self.elemental_templates_5 = []
+        self.elemental_templates_4 = []
+        # Physical templates - priority 6, 5, 4
+        self.physical_templates_6 = []
+        self.physical_templates_5 = []
+        self.physical_templates_4 = []
         self.load_templates()
         
         # Create UI
@@ -97,9 +107,18 @@ class ElementalAttackDetector:
                     click_pos = config.get('click_coordinates')
                     if click_pos:
                         self.click_coordinates = (click_pos[0], click_pos[1])
-                    detection_reg = config.get('detection_region')
-                    if detection_reg and len(detection_reg) == 4:
-                        self.detection_region = tuple(detection_reg)  # (x, y, width, height)
+                    # Load detection regions (support both old format and new format)
+                    detection_reg = config.get('detection_region')  # Old format for backward compatibility
+                    elemental_reg = config.get('elemental_detection_region')
+                    physical_reg = config.get('physical_detection_region')
+                    
+                    if elemental_reg and len(elemental_reg) == 4:
+                        self.elemental_detection_region = tuple(elemental_reg)
+                    elif detection_reg and len(detection_reg) == 4:  # Backward compatibility
+                        self.elemental_detection_region = tuple(detection_reg)
+                    
+                    if physical_reg and len(physical_reg) == 4:
+                        self.physical_detection_region = tuple(physical_reg)
         except Exception as e:
             print(f"Could not load config: {e}")
     
@@ -111,7 +130,8 @@ class ElementalAttackDetector:
                 'click_cooldown': self.click_cooldown,
                 'check_interval': self.check_interval,
                 'click_coordinates': list(self.click_coordinates) if self.click_coordinates else None,
-                'detection_region': list(self.detection_region) if self.detection_region else None
+                'elemental_detection_region': list(self.elemental_detection_region) if self.elemental_detection_region else None,
+                'physical_detection_region': list(self.physical_detection_region) if self.physical_detection_region else None
             }
             with open(CONFIG_FILE, 'w') as f:
                 json.dump(config, f, indent=2)
@@ -121,39 +141,47 @@ class ElementalAttackDetector:
     def load_templates(self):
         """Load the reference images for template matching"""
         try:
-            # Load special instant-click template for number 4 (highest priority)
-            if os.path.exists(TEMPLATE_ONLY_4):
-                template = cv2.imread(TEMPLATE_ONLY_4, cv2.IMREAD_COLOR)
-                if template is not None:
-                    template = cv2.cvtColor(template, cv2.COLOR_BGR2GRAY)
-                    self.template_only_4 = template
-                    print(f"Loaded INSTANT-CLICK template: {os.path.basename(TEMPLATE_ONLY_4)}")
-            
-            # Load all templates for number 4
-            for template_path in [TEMPLATE_4_1, TEMPLATE_4_2, TEMPLATE_4_3]:
+            # Load elemental templates - priority 6, 5, 4
+            for template_path, template_list, num in [
+                (ELEMENTAL_6, self.elemental_templates_6, 6),
+                (ELEMENTAL_5, self.elemental_templates_5, 5),
+                (ELEMENTAL_4, self.elemental_templates_4, 4)
+            ]:
                 if os.path.exists(template_path):
                     template = cv2.imread(template_path, cv2.IMREAD_COLOR)
                     if template is not None:
                         template = cv2.cvtColor(template, cv2.COLOR_BGR2GRAY)
-                        self.templates_4.append(template)
-                        print(f"Loaded template for 4: {os.path.basename(template_path)}")
+                        template_list.append(template)
+                        print(f"Loaded elemental template for {num}: {os.path.basename(template_path)}")
+                else:
+                    print(f"Warning: Elemental template not found: {template_path}")
             
-            # Load all templates for number 5
-            for template_path in [TEMPLATE_5_1, TEMPLATE_5_2]:
+            # Load physical templates - priority 6, 5, 4
+            for template_path, template_list, num in [
+                (PHYSICAL_6, self.physical_templates_6, 6),
+                (PHYSICAL_5, self.physical_templates_5, 5),
+                (PHYSICAL_4, self.physical_templates_4, 4)
+            ]:
                 if os.path.exists(template_path):
                     template = cv2.imread(template_path, cv2.IMREAD_COLOR)
                     if template is not None:
                         template = cv2.cvtColor(template, cv2.COLOR_BGR2GRAY)
-                        self.templates_5.append(template)
-                        print(f"Loaded template for 5: {os.path.basename(template_path)}")
+                        template_list.append(template)
+                        print(f"Loaded physical template for {num}: {os.path.basename(template_path)}")
+                else:
+                    print(f"Warning: Physical template not found: {template_path}")
             
-            total_templates = len(self.templates_4) + len(self.templates_5) + (1 if self.template_only_4 is not None else 0)
-            print(f"Loaded {total_templates} templates total ({len(self.templates_4)} for 4, {len(self.templates_5)} for 5, {'1 instant-click' if self.template_only_4 is not None else '0 instant-click'})")
+            total_elemental = len(self.elemental_templates_6) + len(self.elemental_templates_5) + len(self.elemental_templates_4)
+            total_physical = len(self.physical_templates_6) + len(self.physical_templates_5) + len(self.physical_templates_4)
+            print(f"Loaded {total_elemental} elemental templates (6:{len(self.elemental_templates_6)}, 5:{len(self.elemental_templates_5)}, 4:{len(self.elemental_templates_4)})")
+            print(f"Loaded {total_physical} physical templates (6:{len(self.physical_templates_6)}, 5:{len(self.physical_templates_5)}, 4:{len(self.physical_templates_4)})")
             
-            if total_templates == 0:
+            if total_elemental == 0 and total_physical == 0:
                 print("Warning: No template images loaded. Falling back to OCR-based detection")
         except Exception as e:
             print(f"Warning: Could not load template images: {e}")
+            import traceback
+            traceback.print_exc()
             print("Falling back to OCR-based detection")
         
     def create_ui(self):
@@ -203,6 +231,18 @@ class ElementalAttackDetector:
         )
         self.pause_btn.pack(side=tk.LEFT, padx=5)
         
+        self.stop_btn = tk.Button(
+            control_frame,
+            text="Stop",
+            width=12,
+            command=self.stop_detection,
+            bg="#f44336",
+            fg="white",
+            font=("Arial", 9),
+            state="disabled"
+        )
+        self.stop_btn.pack(side=tk.LEFT, padx=5)
+        
         settings_btn = tk.Button(
             control_frame,
             text="Settings",
@@ -234,17 +274,12 @@ class ElementalAttackDetector:
         # Detection region info
         self.detection_region_label = tk.Label(
             self.root,
-            text="Detection Region: Not set (using full screen)",
+            text="Detection Regions: See Settings",
             fg="gray",
             font=("Arial", 8)
         )
         self.detection_region_label.pack(pady=2)
-        if self.detection_region:
-            x, y, w, h = self.detection_region
-            self.detection_region_label.config(
-                text=f"Detection Region: ({x}, {y}) - {w}x{h}",
-                fg="green"
-            )
+        self.update_detection_region_label()
         
         # Info label
         info_label = tk.Label(
@@ -254,6 +289,24 @@ class ElementalAttackDetector:
             font=("Arial", 7)
         )
         info_label.pack(pady=2)
+    
+    def update_detection_region_label(self):
+        """Update the detection region label with current settings"""
+        elemental_text = "Not set"
+        physical_text = "Not set"
+        
+        if self.elemental_detection_region:
+            x, y, w, h = self.elemental_detection_region
+            elemental_text = f"({x}, {y}) - {w}x{h}"
+        
+        if self.physical_detection_region:
+            x, y, w, h = self.physical_detection_region
+            physical_text = f"({x}, {y}) - {w}x{h}"
+        
+        self.detection_region_label.config(
+            text=f"Elemental: {elemental_text} | Physical: {physical_text}",
+            fg="green" if (self.elemental_detection_region or self.physical_detection_region) else "gray"
+        )
         
     def start_elemental(self):
         if not self.running:
@@ -264,6 +317,7 @@ class ElementalAttackDetector:
             self.elemental_btn.config(state="disabled")
             self.physical_btn.config(state="disabled")
             self.pause_btn.config(state="normal", text="Pause")
+            self.stop_btn.config(state="normal")
             self.detection_thread = threading.Thread(target=self.detect_elemental, daemon=True)
             self.detection_thread.start()
             
@@ -276,8 +330,21 @@ class ElementalAttackDetector:
             self.elemental_btn.config(state="disabled")
             self.physical_btn.config(state="disabled")
             self.pause_btn.config(state="normal", text="Pause")
+            self.stop_btn.config(state="normal")
             self.detection_thread = threading.Thread(target=self.detect_physical, daemon=True)
             self.detection_thread.start()
+    
+    def stop_detection(self):
+        """Stop the current detection"""
+        if self.running:
+            self.running = False
+            self.paused = False
+            self.mode = None
+            self.status_label.config(text="Stopped", fg="gray")
+            self.elemental_btn.config(state="normal")
+            self.physical_btn.config(state="normal")
+            self.pause_btn.config(state="disabled", text="Pause", bg="#FF9800")
+            self.stop_btn.config(state="disabled")
     
     def toggle_pause(self):
         """Pause or resume detection"""
@@ -299,7 +366,7 @@ class ElementalAttackDetector:
         
         settings_window = tk.Toplevel(self.root)
         settings_window.title("Settings")
-        settings_window.geometry("450x550")
+        settings_window.geometry("500x650")
         settings_window.resizable(False, False)
         
         # Match threshold
@@ -425,20 +492,61 @@ class ElementalAttackDetector:
         )
         set_pos_btn.pack(side=tk.LEFT, padx=5)
         
-        # Detection region
+        # Detection region selection
         detection_region_frame = tk.Frame(settings_window)
         detection_region_frame.pack(pady=15)
         
-        tk.Label(detection_region_frame, text="Detection Region:", font=("Arial", 10)).pack(side=tk.LEFT, padx=5)
-        if self.detection_region:
-            x, y, w, h = self.detection_region
-            region_text = f"({x}, {y}) - {w}x{h}"
+        tk.Label(detection_region_frame, text="Detection Region:", font=("Arial", 10, "bold")).pack()
+        
+        # Mode selection
+        mode_frame = tk.Frame(detection_region_frame)
+        mode_frame.pack(pady=5)
+        
+        tk.Label(mode_frame, text="Select Mode:", font=("Arial", 9)).pack(side=tk.LEFT, padx=5)
+        region_mode_var = tk.StringVar(value="elemental")
+        elemental_radio = tk.Radiobutton(mode_frame, text="Elemental", variable=region_mode_var, value="elemental", font=("Arial", 9))
+        elemental_radio.pack(side=tk.LEFT, padx=5)
+        physical_radio = tk.Radiobutton(mode_frame, text="Physical", variable=region_mode_var, value="physical", font=("Arial", 9))
+        physical_radio.pack(side=tk.LEFT, padx=5)
+        
+        # Current region display
+        region_display_frame = tk.Frame(detection_region_frame)
+        region_display_frame.pack(pady=5)
+        
+        tk.Label(region_display_frame, text="Elemental:", font=("Arial", 9)).pack(side=tk.LEFT, padx=5)
+        if self.elemental_detection_region:
+            x, y, w, h = self.elemental_detection_region
+            elemental_text = f"({x}, {y}) - {w}x{h}"
         else:
-            region_text = "Not set (using full screen)"
-        region_label = tk.Label(detection_region_frame, text=region_text, fg="blue", font=("Arial", 9))
-        region_label.pack(side=tk.LEFT, padx=5)
+            elemental_text = "Not set (using full screen)"
+        elemental_region_label = tk.Label(region_display_frame, text=elemental_text, fg="blue", font=("Arial", 8))
+        elemental_region_label.pack(side=tk.LEFT, padx=5)
+        
+        tk.Label(region_display_frame, text="Physical:", font=("Arial", 9)).pack(side=tk.LEFT, padx=5)
+        if self.physical_detection_region:
+            x, y, w, h = self.physical_detection_region
+            physical_text = f"({x}, {y}) - {w}x{h}"
+        else:
+            physical_text = "Not set (using full screen)"
+        physical_region_label = tk.Label(region_display_frame, text=physical_text, fg="blue", font=("Arial", 8))
+        physical_region_label.pack(side=tk.LEFT, padx=5)
+        
+        def update_region_display():
+            """Update the region display labels"""
+            if self.elemental_detection_region:
+                x, y, w, h = self.elemental_detection_region
+                elemental_region_label.config(text=f"({x}, {y}) - {w}x{h}", fg="green")
+            else:
+                elemental_region_label.config(text="Not set (using full screen)", fg="blue")
+            
+            if self.physical_detection_region:
+                x, y, w, h = self.physical_detection_region
+                physical_region_label.config(text=f"({x}, {y}) - {w}x{h}", fg="green")
+            else:
+                physical_region_label.config(text="Not set (using full screen)", fg="blue")
         
         def set_detection_region():
+            selected_mode = region_mode_var.get()
             settings_window.withdraw()  # Hide settings window
             
             # Step 1: Get top-left corner
@@ -449,7 +557,7 @@ class ElementalAttackDetector:
             
             step1_label = tk.Label(
                 step1_window,
-                text="Step 1: Move mouse to TOP-LEFT corner of detection area",
+                text=f"Step 1: Move mouse to TOP-LEFT corner of {selected_mode.capitalize()} detection area",
                 font=("Arial", 12, "bold")
             )
             step1_label.pack(pady=20)
@@ -481,7 +589,7 @@ class ElementalAttackDetector:
                     
                     step2_label = tk.Label(
                         step2_window,
-                        text="Step 2: Move mouse to BOTTOM-RIGHT corner of detection area",
+                        text=f"Step 2: Move mouse to BOTTOM-RIGHT corner of {selected_mode.capitalize()} detection area",
                         font=("Arial", 12, "bold")
                     )
                     step2_label.pack(pady=20)
@@ -507,14 +615,17 @@ class ElementalAttackDetector:
                             height = y2 - y1
                             
                             if width > 0 and height > 0:
-                                self.detection_region = (x1, y1, width, height)
-                                region_label.config(text=f"({x1}, {y1}) - {width}x{height}", fg="green")
-                                self.detection_region_label.config(
-                                    text=f"Detection Region: ({x1}, {y1}) - {width}x{height}",
-                                    fg="green"
-                                )
+                                if selected_mode == "elemental":
+                                    self.elemental_detection_region = (x1, y1, width, height)
+                                    mode_name = "Elemental"
+                                else:
+                                    self.physical_detection_region = (x1, y1, width, height)
+                                    mode_name = "Physical"
+                                
+                                update_region_display()
+                                self.update_detection_region_label()
                                 step2_window.destroy()
-                                messagebox.showinfo("Success", f"Detection region set: ({x1}, {y1}) - {width}x{height}")
+                                messagebox.showinfo("Success", f"{mode_name} detection region set: ({x1}, {y1}) - {width}x{height}")
                                 settings_window.deiconify()
                             else:
                                 step2_window.destroy()
@@ -580,9 +691,153 @@ class ElementalAttackDetector:
         self.root.quit()
         self.root.destroy()
         
+    def detect_with_templates(self, templates_6, templates_5, templates_4, detection_region, mode_name):
+        """
+        Generic detection function that checks for numbers 6, 5, 4 in priority order.
+        Returns (detected, detected_number, click_x, click_y, confidence)
+        """
+        # Capture the screen (full screen or region if specified)
+        if detection_region:
+            x, y, w, h = detection_region
+            screenshot = ImageGrab.grab(bbox=(x, y, x + w, y + h))
+            offset_x, offset_y = x, y
+        else:
+            screenshot = ImageGrab.grab()
+            offset_x, offset_y = 0, 0
+        
+        screenshot_np = np.array(screenshot)
+        screenshot_cv = cv2.cvtColor(screenshot_np, cv2.COLOR_RGB2BGR)
+        gray = cv2.cvtColor(screenshot_cv, cv2.COLOR_BGR2GRAY)
+        
+        detected = False
+        click_x, click_y = None, None
+        detected_number = None
+        confidence = 0.0
+        
+        # Debug for physical mode
+        if mode_name == "physical":
+            region_info = f"region=({x},{y},{w},{h})" if detection_region else "region=full screen"
+            print(f"[PHYSICAL DEBUG] Starting detection - templates: 6={len(templates_6)}, 5={len(templates_5)}, 4={len(templates_4)}, threshold={self.match_threshold:.3f}, {region_info}")
+        
+        # Priority order: 6, 5, 4
+        # Check for number 6 (highest priority)
+        if len(templates_6) > 0:
+            best_match_6 = None
+            best_conf_6 = 0.0
+            best_loc_6 = None
+            
+            for template_6 in templates_6:
+                result_6 = cv2.matchTemplate(gray, template_6, cv2.TM_CCOEFF_NORMED)
+                _, max_val_6, _, max_loc_6 = cv2.minMaxLoc(result_6)
+                
+                if max_val_6 > best_conf_6:
+                    best_conf_6 = max_val_6
+                    best_loc_6 = max_loc_6
+                    best_match_6 = template_6
+            
+            if best_conf_6 >= self.match_threshold:
+                detected = True
+                detected_number = 6
+                confidence = best_conf_6
+                print(f"Detected {mode_name} number 6 with confidence: {best_conf_6:.2f}")
+                click_x = best_loc_6[0] + best_match_6.shape[1] // 2 + offset_x
+                click_y = best_loc_6[1] + best_match_6.shape[0] // 2 + offset_y
+            elif mode_name == "physical":  # Always show for physical to debug
+                print(f"[PHYSICAL] 6: best_conf={best_conf_6:.3f} < threshold={self.match_threshold:.3f} (diff: {self.match_threshold - best_conf_6:.3f})")
+        
+        # Check for number 5 (second priority)
+        if not detected and len(templates_5) > 0:
+            best_match_5 = None
+            best_conf_5 = 0.0
+            best_loc_5 = None
+            
+            for template_5 in templates_5:
+                result_5 = cv2.matchTemplate(gray, template_5, cv2.TM_CCOEFF_NORMED)
+                _, max_val_5, _, max_loc_5 = cv2.minMaxLoc(result_5)
+                
+                if max_val_5 > best_conf_5:
+                    best_conf_5 = max_val_5
+                    best_loc_5 = max_loc_5
+                    best_match_5 = template_5
+            
+            if best_conf_5 >= self.match_threshold:
+                detected = True
+                detected_number = 5
+                confidence = best_conf_5
+                print(f"Detected {mode_name} number 5 with confidence: {best_conf_5:.2f}")
+                click_x = best_loc_5[0] + best_match_5.shape[1] // 2 + offset_x
+                click_y = best_loc_5[1] + best_match_5.shape[0] // 2 + offset_y
+            elif mode_name == "physical":  # Always show for physical to debug
+                print(f"[PHYSICAL] 5: best_conf={best_conf_5:.3f} < threshold={self.match_threshold:.3f} (diff: {self.match_threshold - best_conf_5:.3f})")
+        
+        # Check for number 4 (third priority)
+        if not detected and len(templates_4) > 0:
+            best_match_4 = None
+            best_conf_4 = 0.0
+            best_loc_4 = None
+            
+            for template_4 in templates_4:
+                result_4 = cv2.matchTemplate(gray, template_4, cv2.TM_CCOEFF_NORMED)
+                _, max_val_4, _, max_loc_4 = cv2.minMaxLoc(result_4)
+                
+                if max_val_4 > best_conf_4:
+                    best_conf_4 = max_val_4
+                    best_loc_4 = max_loc_4
+                    best_match_4 = template_4
+            
+            if best_conf_4 >= self.match_threshold:
+                detected = True
+                detected_number = 4
+                confidence = best_conf_4
+                print(f"Detected {mode_name} number 4 with confidence: {best_conf_4:.2f}")
+                click_x = best_loc_4[0] + best_match_4.shape[1] // 2 + offset_x
+                click_y = best_loc_4[1] + best_match_4.shape[0] // 2 + offset_y
+            elif mode_name == "physical":  # Always show for physical to debug
+                print(f"[PHYSICAL] 4: best_conf={best_conf_4:.3f} < threshold={self.match_threshold:.3f} (diff: {self.match_threshold - best_conf_4:.3f})")
+        
+        # OCR fallback
+        if not detected:
+            if mode_name == "physical":
+                print(f"[PHYSICAL] No template matches found, trying OCR fallback...")
+            try:
+                screen_width, screen_height = gray.shape[1], gray.shape[0]
+                regions_to_check = [
+                    (screen_width // 2, screen_height // 2 - 100, 200, 100),
+                    (screen_width - 300, screen_height // 2 - 100, 250, 150),
+                ]
+                
+                for x, y, w, h in regions_to_check:
+                    x = max(0, min(x, screen_width - w))
+                    y = max(0, min(y, screen_height - h))
+                    region = gray[y:y+h, x:x+w]
+                    
+                    custom_config = r'--oem 3 --psm 10 -c tessedit_char_whitelist=0123456789'
+                    text = pytesseract.image_to_string(region, config=custom_config)
+                    
+                    # Look for numbers 6, 5, or 4 (priority order)
+                    for char in text.strip():
+                        if char in ['6', '5', '4']:
+                            detected = True
+                            detected_number = int(char)
+                            print(f"Detected {mode_name} number {char} via OCR in region ({x}, {y})")
+                            click_x = x + w // 2 + offset_x
+                            click_y = y + h // 2 + offset_y
+                            break
+                    
+                    if detected:
+                        break
+            except Exception as ocr_error:
+                if mode_name == "physical":
+                    print(f"[PHYSICAL] OCR error: {ocr_error}")
+        
+        if mode_name == "physical":
+            print(f"[PHYSICAL] Detection result: detected={detected}, number={detected_number}, click=({click_x}, {click_y}), confidence={confidence:.3f}")
+        
+        return detected, detected_number, click_x, click_y, confidence
+    
     def detect_elemental(self):
         """
-        Detects if the elemental attack number is 4 or 5 and clicks if found.
+        Detects if the elemental attack number is 6, 5, or 4 (priority order) and clicks if found.
         Uses template matching first, falls back to OCR if templates aren't available.
         """
         detection_count = 0
@@ -597,145 +852,48 @@ class ElementalAttackDetector:
             try:
                 current_time = time.time()
                 
-                # Capture the screen (full screen or region if specified)
-                if self.detection_region:
-                    x, y, w, h = self.detection_region
-                    # Grab only the specified region for faster processing
-                    screenshot = ImageGrab.grab(bbox=(x, y, x + w, y + h))
-                    offset_x, offset_y = x, y  # Store offset to adjust click coordinates later
+                # Use generic detection function
+                detected, detected_number, click_x, click_y, confidence = self.detect_with_templates(
+                    self.elemental_templates_6,
+                    self.elemental_templates_5,
+                    self.elemental_templates_4,
+                    self.elemental_detection_region,
+                    "elemental"
+                )
+                
+                # Debug output
+                if detected:
+                    cooldown_remaining = max(0, self.click_cooldown - (current_time - last_click_time))
+                    print(f"[DEBUG] Elemental detection: detected={detected}, number={detected_number}, click_x={click_x}, click_y={click_y}, cooldown_remaining={cooldown_remaining:.2f}")
+                    if not click_x or not click_y:
+                        print(f"[WARNING] Detection found but click coordinates are None! This should not happen.")
                 else:
-                    screenshot = ImageGrab.grab()
-                    offset_x, offset_y = 0, 0
-                
-                screenshot_np = np.array(screenshot)
-                screenshot_cv = cv2.cvtColor(screenshot_np, cv2.COLOR_RGB2BGR)
-                gray = cv2.cvtColor(screenshot_cv, cv2.COLOR_BGR2GRAY)
-                
-                detected = False
-                click_x, click_y = None, None
-                detected_number = None
-                confidence = 0.0
-                
-                # Method 1: Template Matching (more accurate if templates are loaded)
-                # Check for only_4.png FIRST (highest priority)
-                if self.template_only_4 is not None:
-                    result_only_4 = cv2.matchTemplate(gray, self.template_only_4, cv2.TM_CCOEFF_NORMED)
-                    _, max_val_only_4, _, max_loc_only_4 = cv2.minMaxLoc(result_only_4)
-                    
-                    if max_val_only_4 >= self.match_threshold:
-                        detected = True
-                        detected_number = 4
-                        confidence = max_val_only_4
-                        print(f"Detected only_4.png with confidence: {max_val_only_4:.2f}")
-                        # Adjust coordinates if using detection region
-                        click_x = max_loc_only_4[0] + self.template_only_4.shape[1] // 2 + offset_x
-                        click_y = max_loc_only_4[1] + self.template_only_4.shape[0] // 2 + offset_y
-                
-                # Check for number 5 (second priority)
-                if not detected and len(self.templates_5) > 0:
-                    for template_5 in self.templates_5:
-                        result_5 = cv2.matchTemplate(gray, template_5, cv2.TM_CCOEFF_NORMED)
-                        _, max_val_5, _, max_loc_5 = cv2.minMaxLoc(result_5)
-                        
-                        if max_val_5 >= self.match_threshold:
-                            detected = True
-                            detected_number = 5
-                            confidence = max_val_5
-                            print(f"Detected number 5 with confidence: {max_val_5:.2f}")
-                            # Adjust coordinates if using detection region
-                            click_x = max_loc_5[0] + template_5.shape[1] // 2 + offset_x
-                            click_y = max_loc_5[1] + template_5.shape[0] // 2 + offset_y
-                            break  # Stop after first match
-                
-                # Only check templates for number 4 if we didn't find a 5
-                if not detected and len(self.templates_4) > 0:
-                    best_match_4 = None
-                    best_conf_4 = 0.0
-                    best_loc_4 = None
-                    high_confidence_threshold = 0.9  # Stop early if we find a very confident match
-                    
-                    for template_4 in self.templates_4:
-                        result_4 = cv2.matchTemplate(gray, template_4, cv2.TM_CCOEFF_NORMED)
-                        _, max_val_4, _, max_loc_4 = cv2.minMaxLoc(result_4)
-                        
-                        if max_val_4 > best_conf_4:
-                            best_conf_4 = max_val_4
-                            best_loc_4 = max_loc_4
-                            best_match_4 = template_4
-                            
-                            # Early exit if we found a very high confidence match
-                            if best_conf_4 >= high_confidence_threshold:
-                                break
-                    
-                    if best_conf_4 >= self.match_threshold:
-                        detected = True
-                        detected_number = 4
-                        confidence = best_conf_4
-                        print(f"Detected number 4 with confidence: {best_conf_4:.2f}")
-                        # Adjust coordinates if using detection region
-                        click_x = best_loc_4[0] + best_match_4.shape[1] // 2 + offset_x
-                        click_y = best_loc_4[1] + best_match_4.shape[0] // 2 + offset_y
-                
-                # Method 2: OCR fallback (if template matching fails or templates not available)
-                if not detected:
-                    try:
-                        # Crop a region where the number likely appears
-                        # Adjust these coordinates based on where the number appears on your screen
-                        screen_width, screen_height = gray.shape[1], gray.shape[0]
-                        
-                        # Try multiple regions - adjust these based on your game UI
-                        regions_to_check = [
-                            # (x, y, width, height) - adjust these coordinates
-                            (screen_width // 2, screen_height // 2 - 100, 200, 100),
-                            (screen_width - 300, screen_height // 2 - 100, 250, 150),
-                        ]
-                        
-                        for x, y, w, h in regions_to_check:
-                            # Ensure coordinates are within bounds
-                            x = max(0, min(x, screen_width - w))
-                            y = max(0, min(y, screen_height - h))
-                            region = gray[y:y+h, x:x+w]
-                            
-                            # Use OCR on this region
-                            custom_config = r'--oem 3 --psm 10 -c tessedit_char_whitelist=0123456789'
-                            text = pytesseract.image_to_string(region, config=custom_config)
-                            
-                            # Look for numbers 4 or 5
-                            for char in text.strip():
-                                if char == '4' or char == '5':
-                                    detected = True
-                                    detected_number = int(char)
-                                    print(f"Detected number {char} via OCR in region ({x}, {y})")
-                                    # Adjust coordinates if using detection region
-                                    click_x = x + w // 2 + offset_x
-                                    click_y = y + h // 2 + offset_y
-                                    break
-                            
-                            if detected:
-                                break
-                    except Exception as ocr_error:
-                        pass  # OCR failed, continue with next check
+                    # Only print debug every 10 checks to avoid spam
+                    if detection_count % 10 == 0:
+                        print(f"[DEBUG] Elemental: No detection (templates_6={len(self.elemental_templates_6)}, templates_5={len(self.elemental_templates_5)}, templates_4={len(self.elemental_templates_4)})")
                 
                 # Perform click if detected and cooldown has passed
-                if detected and (current_time - last_click_time) >= self.click_cooldown and click_x and click_y:
-                    detection_count += 1
-                    print(f"Clicking at ({click_x}, {click_y}) - Detection #{detection_count} (Number {detected_number})")
-                    
-                    # Click at detected location or use stored click coordinates
-                    if self.click_coordinates:
-                        pyautogui.click(self.click_coordinates[0], self.click_coordinates[1])
-                        click_info = f"Clicked at ({self.click_coordinates[0]}, {self.click_coordinates[1]})"
+                if detected and (current_time - last_click_time) >= self.click_cooldown:
+                    if click_x and click_y:
+                        detection_count += 1
+                        print(f"Clicking at ({click_x}, {click_y}) - Detection #{detection_count} (Number {detected_number})")
+                        
+                        # Click at detected location or use stored click coordinates
+                        if self.click_coordinates:
+                            pyautogui.click(self.click_coordinates[0], self.click_coordinates[1])
+                            click_info = f"Clicked at ({self.click_coordinates[0]}, {self.click_coordinates[1]})"
+                        else:
+                            pyautogui.click(click_x, click_y)
+                            click_info = f"Clicked at ({click_x}, {click_y})"
+                        
+                        last_click_time = current_time
+                        count = detection_count
+                        conf_str = f" ({confidence:.2f})" if confidence > 0 else ""
+                        self.root.after(0, lambda c=count, n=detected_number, info=click_info: self.status_label.config(
+                            text=f"Elemental: Clicked! #{c} (Number {n}){conf_str}", fg="green"
+                        ))
                     else:
-                        # Click at the center of detected number, or adjust to click on attack button
-                        pyautogui.click(click_x, click_y)
-                        click_info = f"Clicked at ({click_x}, {click_y})"
-                    
-                    last_click_time = current_time
-                    count = detection_count  # Capture for lambda
-                    conf_str = f" ({confidence:.2f})" if confidence > 0 else ""
-                    self.root.after(0, lambda c=count, n=detected_number, info=click_info: self.status_label.config(
-                        text=f"Elemental: Clicked! #{c} (Number {n}){conf_str}", fg="green"
-                    ))
+                        print(f"[ERROR] Cannot click: detected={detected} but click_x={click_x}, click_y={click_y}")
                     
             except Exception as e:
                 print(f"Error in detection: {e}")
@@ -746,16 +904,71 @@ class ElementalAttackDetector:
             
     def detect_physical(self):
         """
-        Placeholder for physical attack detection
-        Similar logic can be implemented here
+        Detects if the physical attack number is 6, 5, or 4 (priority order) and clicks if found.
+        Uses template matching first, falls back to OCR if templates aren't available.
         """
+        detection_count = 0
+        last_click_time = 0
+        
         while self.running:
             # Skip detection if paused
             if self.paused:
                 time.sleep(0.5)
                 continue
-            # Implement physical attack detection logic here
-            time.sleep(self.check_interval)
+                
+            try:
+                current_time = time.time()
+                
+                # Use generic detection function
+                detected, detected_number, click_x, click_y, confidence = self.detect_with_templates(
+                    self.physical_templates_6,
+                    self.physical_templates_5,
+                    self.physical_templates_4,
+                    self.physical_detection_region,
+                    "physical"
+                )
+                
+                # Debug output
+                if detected:
+                    cooldown_remaining = max(0, self.click_cooldown - (current_time - last_click_time))
+                    print(f"[DEBUG] Physical detection: detected={detected}, number={detected_number}, click_x={click_x}, click_y={click_y}, cooldown_remaining={cooldown_remaining:.2f}")
+                    if not click_x or not click_y:
+                        print(f"[WARNING] Detection found but click coordinates are None! This should not happen.")
+                else:
+                    # Print debug more frequently for physical to help diagnose
+                    if detection_count % 5 == 0:
+                        region_info = f"region={self.physical_detection_region}" if self.physical_detection_region else "region=full screen"
+                        print(f"[DEBUG] Physical: No detection (templates_6={len(self.physical_templates_6)}, templates_5={len(self.physical_templates_5)}, templates_4={len(self.physical_templates_4)}, {region_info})")
+                
+                # Perform click if detected and cooldown has passed
+                if detected and (current_time - last_click_time) >= self.click_cooldown:
+                    if click_x and click_y:
+                        detection_count += 1
+                        print(f"Clicking at ({click_x}, {click_y}) - Detection #{detection_count} (Number {detected_number})")
+                        
+                        # Click at detected location or use stored click coordinates
+                        if self.click_coordinates:
+                            pyautogui.click(self.click_coordinates[0], self.click_coordinates[1])
+                            click_info = f"Clicked at ({self.click_coordinates[0]}, {self.click_coordinates[1]})"
+                        else:
+                            pyautogui.click(click_x, click_y)
+                            click_info = f"Clicked at ({click_x}, {click_y})"
+                        
+                        last_click_time = current_time
+                        count = detection_count
+                        conf_str = f" ({confidence:.2f})" if confidence > 0 else ""
+                        self.root.after(0, lambda c=count, n=detected_number, info=click_info: self.status_label.config(
+                            text=f"Physical: Clicked! #{c} (Number {n}){conf_str}", fg="blue"
+                        ))
+                    else:
+                        print(f"[ERROR] Cannot click: detected={detected} but click_x={click_x}, click_y={click_y}")
+                    
+            except Exception as e:
+                print(f"Error in detection: {e}")
+                import traceback
+                traceback.print_exc()
+                
+            time.sleep(self.check_interval)  # Check at configured interval
 
 if __name__ == "__main__":
     root = tk.Tk()

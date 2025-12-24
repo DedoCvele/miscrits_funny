@@ -3,13 +3,19 @@
   "click_cooldown": 3.0,
   "check_interval": 0.2,
   "click_coordinates": [
-    970,
-    535
+    967,
+    659
   ],
-  "detection_region": [
+  "elemental_detection_region": [
     674,
     769,
     284,
     55
+  ],
+  "physical_detection_region": [
+    968,
+    657,
+    279,
+    52
   ]
 }
