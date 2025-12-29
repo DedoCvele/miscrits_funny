@@ -1,5 +1,5 @@
 {
-  "match_threshold": 0.9,
+  "match_threshold": 0.75,
   "click_cooldown": 3.0,
   "check_interval": 0.2,
   "click_coordinates": [
@@ -17,5 +17,420 @@
     657,
     279,
     52
+  ],
+  "feedback_data": [
+    {
+      "number": 6,
+      "mode": "elemental",
+      "confidence": 0.9402397871017456,
+      "feedback": "bad",
+      "timestamp": 1766712494.51349
+    },
+    {
+      "number": 6,
+      "mode": "elemental",
+      "confidence": 0.9348934888839722,
+      "feedback": "bad",
+      "timestamp": 1766712716.6688545
+    },
+    {
+      "number": 6,
+      "mode": "elemental",
+      "confidence": 0.9274407029151917,
+      "feedback": "bad",
+      "timestamp": 1766712994.42528
+    },
+    {
+      "number": 6,
+      "mode": "elemental",
+      "confidence": 0.9311202168464661,
+      "feedback": "good",
+      "timestamp": 1766713250.817943
+    },
+    {
+      "number": 6,
+      "mode": "elemental",
+      "confidence": 0.913891077041626,
+      "feedback": "good",
+      "timestamp": 1766713401.454642
+    },
+    {
+      "number": 6,
+      "mode": "elemental",
+      "confidence": 0.9214274883270264,
+      "feedback": "bad",
+      "timestamp": 1766713598.208235
+    },
+    {
+      "number": 6,
+      "mode": "elemental",
+      "confidence": 0.9130935668945312,
+      "feedback": "good",
+      "timestamp": 1766713790.3341901
+    },
+    {
+      "number": 6,
+      "mode": "elemental",
+      "confidence": 0.9215235114097595,
+      "feedback": "bad",
+      "timestamp": 1766750894.7219596
+    },
+    {
+      "number": 6,
+      "mode": "physical",
+      "confidence": 1.0,
+      "feedback": "bad",
+      "timestamp": 1766751060.9588382
+    },
+    {
+      "number": 6,
+      "mode": "elemental",
+      "confidence": 0.9279449582099915,
+      "feedback": "good",
+      "timestamp": 1766751269.586424
+    },
+    {
+      "number": 6,
+      "mode": "physical",
+      "confidence": 0.8073620796203613,
+      "feedback": "good",
+      "timestamp": 1766751379.4543695
+    },
+    {
+      "number": 6,
+      "mode": "physical",
+      "confidence": 0.8032205700874329,
+      "feedback": "bad",
+      "timestamp": 1766751454.850844
+    },
+    {
+      "number": 6,
+      "mode": "physical",
+      "confidence": 0.8023704886436462,
+      "feedback": "bad",
+      "timestamp": 1766751604.8899188
+    },
+    {
+      "number": 6,
+      "mode": "physical",
+      "confidence": 0.7974482774734497,
+      "feedback": "bad",
+      "timestamp": 1766751801.9491704
+    },
+    {
+      "number": 6,
+      "mode": "physical",
+      "confidence": 0.8040872812271118,
+      "feedback": "bad",
+      "timestamp": 1766751908.4622235
+    },
+    {
+      "number": 6,
+      "mode": "physical",
+      "confidence": 0.8040872812271118,
+      "feedback": "bad",
+      "timestamp": 1766751911.5877898
+    },
+    {
+      "number": 6,
+      "mode": "physical",
+      "confidence": 0.8030577898025513,
+      "feedback": "good",
+      "timestamp": 1766752048.027923
+    },
+    {
+      "number": 6,
+      "mode": "physical",
+      "confidence": 0.8030577898025513,
+      "feedback": "good",
+      "timestamp": 1766752051.1528869
+    },
+    {
+      "number": 6,
+      "mode": "physical",
+      "confidence": 0.8030577898025513,
+      "feedback": "good",
+      "timestamp": 1766752054.2852242
+    },
+    {
+      "number": 6,
+      "mode": "physical",
+      "confidence": 0.8030577898025513,
+      "feedback": "good",
+      "timestamp": 1766752057.4104855
+    },
+    {
+      "number": 6,
+      "mode": "physical",
+      "confidence": 0.8030577898025513,
+      "feedback": "good",
+      "timestamp": 1766752060.5363731
+    },
+    {
+      "number": 6,
+      "mode": "physical",
+      "confidence": 0.8030577898025513,
+      "feedback": "good",
+      "timestamp": 1766752066.7960908
+    },
+    {
+      "number": 6,
+      "mode": "physical",
+      "confidence": 0.801788330078125,
+      "feedback": "bad",
+      "timestamp": 1766752271.6948235
+    },
+    {
+      "number": 6,
+      "mode": "physical",
+      "confidence": 0.801788330078125,
+      "feedback": "bad",
+      "timestamp": 1766752274.8329513
+    },
+    {
+      "number": 6,
+      "mode": "physical",
+      "confidence": 0.801788330078125,
+      "feedback": "bad",
+      "timestamp": 1766752277.9603927
+    },
+    {
+      "number": 6,
+      "mode": "physical",
+      "confidence": 0.801788330078125,
+      "feedback": "bad",
+      "timestamp": 1766752281.0831907
+    },
+    {
+      "number": 6,
+      "mode": "physical",
+      "confidence": 0.801788330078125,
+      "feedback": "bad",
+      "timestamp": 1766752284.2161422
+    },
+    {
+      "number": 6,
+      "mode": "physical",
+      "confidence": 0.801788330078125,
+      "feedback": "bad",
+      "timestamp": 1766752287.3351223
+    },
+    {
+      "number": 6,
+      "mode": "physical",
+      "confidence": 0.801788330078125,
+      "feedback": "bad",
+      "timestamp": 1766752296.7634475
+    },
+    {
+      "number": 6,
+      "mode": "physical",
+      "confidence": 0.7887123227119446,
+      "feedback": "bad",
+      "timestamp": 1766752464.4353173
+    },
+    {
+      "number": 6,
+      "mode": "physical",
+      "confidence": 0.8049518465995789,
+      "feedback": "bad",
+      "timestamp": 1766752807.2412086
+    },
+    {
+      "number": 6,
+      "mode": "elemental",
+      "confidence": 0.9343293905258179,
+      "feedback": "good",
+      "timestamp": 1766752888.4240806
+    },
+    {
+      "number": 6,
+      "mode": "elemental",
+      "confidence": 0.9343293905258179,
+      "feedback": "good",
+      "timestamp": 1766753015.3902404
+    },
+    {
+      "number": 6,
+      "mode": "elemental",
+      "confidence": 0.9320055842399597,
+      "feedback": "good",
+      "timestamp": 1766753154.5087368
+    },
+    {
+      "number": 6,
+      "mode": "elemental",
+      "confidence": 0.9599748253822327,
+      "feedback": "good",
+      "timestamp": 1766753181.7014706
+    },
+    {
+      "number": 6,
+      "mode": "elemental",
+      "confidence": 0.9418686032295227,
+      "feedback": "good",
+      "timestamp": 1766753219.0382085
+    },
+    {
+      "number": 6,
+      "mode": "elemental",
+      "confidence": 0.9451887607574463,
+      "feedback": "bad",
+      "timestamp": 1766753251.952987
+    },
+    {
+      "number": 6,
+      "mode": "elemental",
+      "confidence": 0.9003193378448486,
+      "feedback": "good",
+      "timestamp": 1766753300.160519
+    },
+    {
+      "number": 6,
+      "mode": "elemental",
+      "confidence": 0.9226003289222717,
+      "feedback": "good",
+      "timestamp": 1766753357.2171266
+    },
+    {
+      "number": 6,
+      "mode": "elemental",
+      "confidence": 0.9241859912872314,
+      "feedback": "bad",
+      "timestamp": 1766753415.619661
+    },
+    {
+      "number": 6,
+      "mode": "elemental",
+      "confidence": 0.9276766180992126,
+      "feedback": "bad",
+      "timestamp": 1766753423.7464757
+    },
+    {
+      "number": 6,
+      "mode": "elemental",
+      "confidence": 0.9276207685470581,
+      "feedback": "good",
+      "timestamp": 1766753480.71006
+    },
+    {
+      "number": 6,
+      "mode": "elemental",
+      "confidence": 0.9209425449371338,
+      "feedback": "good",
+      "timestamp": 1766753483.8628902
+    },
+    {
+      "number": 6,
+      "mode": "elemental",
+      "confidence": 0.9222756624221802,
+      "feedback": "bad",
+      "timestamp": 1766753575.4150307
+    },
+    {
+      "number": 6,
+      "mode": "elemental",
+      "confidence": 0.9238651394844055,
+      "feedback": "bad",
+      "timestamp": 1766753578.546449
+    },
+    {
+      "number": 6,
+      "mode": "elemental",
+      "confidence": 0.9203742146492004,
+      "feedback": "good",
+      "timestamp": 1766753650.0915544
+    },
+    {
+      "number": 6,
+      "mode": "physical",
+      "confidence": 0.8012732863426208,
+      "feedback": "good",
+      "timestamp": 1766753762.8915024
+    },
+    {
+      "number": 6,
+      "mode": "physical",
+      "confidence": 0.8066667318344116,
+      "feedback": "good",
+      "timestamp": 1766753766.0278718
+    },
+    {
+      "number": 6,
+      "mode": "physical",
+      "confidence": 0.7998132109642029,
+      "feedback": "bad",
+      "timestamp": 1766753863.373944
+    },
+    {
+      "number": 6,
+      "mode": "physical",
+      "confidence": 0.8039641976356506,
+      "feedback": "good",
+      "timestamp": 1766754024.3056786
+    },
+    {
+      "number": 6,
+      "mode": "elemental",
+      "confidence": 0.9228981137275696,
+      "feedback": "good",
+      "timestamp": 1766754300.712168
+    },
+    {
+      "number": 6,
+      "mode": "elemental",
+      "confidence": 0.9234092831611633,
+      "feedback": "good",
+      "timestamp": 1766754303.8453443
+    },
+    {
+      "number": 6,
+      "mode": "elemental",
+      "confidence": 0.8538214564323425,
+      "feedback": "bad",
+      "timestamp": 1766754448.300006
+    },
+    {
+      "number": 6,
+      "mode": "physical",
+      "confidence": 0.7887123227119446,
+      "feedback": "bad",
+      "timestamp": 1766754816.4540896
+    },
+    {
+      "number": 6,
+      "mode": "elemental",
+      "confidence": 0.9243022799491882,
+      "feedback": "bad",
+      "timestamp": 1766755350.7129784
+    },
+    {
+      "number": 6,
+      "mode": "elemental",
+      "confidence": 0.9312008023262024,
+      "feedback": "good",
+      "timestamp": 1766936005.1021962
+    },
+    {
+      "number": 6,
+      "mode": "elemental",
+      "confidence": 0.9599748253822327,
+      "feedback": "good",
+      "timestamp": 1766957775.2181914
+    },
+    {
+      "number": 6,
+      "mode": "elemental",
+      "confidence": 0.8187915086746216,
+      "feedback": "bad",
+      "timestamp": 1766961477.856208
+    },
+    {
+      "number": 6,
+      "mode": "elemental",
+      "confidence": 0.9273239374160767,
+      "feedback": "bad",
+      "timestamp": 1766961828.0764356
+    }
   ]
 }

@@ -59,7 +59,7 @@ class ElementalAttackDetector:
     def __init__(self, root):
         self.root = root
         self.root.title("Elemental Attack Detector")
-        self.root.geometry("400x280")
+        self.root.geometry("400x380")
         self.root.resizable(False, False)
         
         self.running = False
@@ -69,6 +69,10 @@ class ElementalAttackDetector:
         self.click_coordinates = None  # Will store where to click
         self.elemental_detection_region = None  # Will store (x, y, width, height) for elemental detection area
         self.physical_detection_region = None  # Will store (x, y, width, height) for physical detection area
+        
+        # Feedback tracking
+        self.last_detection = None  # Stores (number, mode, confidence, timestamp)
+        self.feedback_data = []  # Stores feedback history
         
         # Configuration settings
         self.match_threshold = 0.7
@@ -119,6 +123,10 @@ class ElementalAttackDetector:
                     
                     if physical_reg and len(physical_reg) == 4:
                         self.physical_detection_region = tuple(physical_reg)
+                    
+                    # Load feedback data
+                    self.feedback_data = config.get('feedback_data', [])
+                    self.update_feedback_stats()
         except Exception as e:
             print(f"Could not load config: {e}")
     
@@ -127,11 +135,12 @@ class ElementalAttackDetector:
         try:
             config = {
                 'match_threshold': self.match_threshold,
-                'click_cooldown': self.click_cooldown,
-                'check_interval': self.check_interval,
-                'click_coordinates': list(self.click_coordinates) if self.click_coordinates else None,
-                'elemental_detection_region': list(self.elemental_detection_region) if self.elemental_detection_region else None,
-                'physical_detection_region': list(self.physical_detection_region) if self.physical_detection_region else None
+                    'click_cooldown': self.click_cooldown,
+                    'check_interval': self.check_interval,
+                    'click_coordinates': list(self.click_coordinates) if self.click_coordinates else None,
+                    'elemental_detection_region': list(self.elemental_detection_region) if self.elemental_detection_region else None,
+                    'physical_detection_region': list(self.physical_detection_region) if self.physical_detection_region else None,
+                    'feedback_data': self.feedback_data
             }
             with open(CONFIG_FILE, 'w') as f:
                 json.dump(config, f, indent=2)
@@ -257,6 +266,61 @@ class ElementalAttackDetector:
         self.status_label = tk.Label(self.root, text="Ready", fg="gray")
         self.status_label.pack(pady=5)
         
+        # Feedback section
+        feedback_frame = tk.Frame(self.root)
+        feedback_frame.pack(pady=10)
+        
+        tk.Label(
+            feedback_frame,
+            text="Last Detection:",
+            font=("Arial", 9, "bold")
+        ).pack(side=tk.LEFT, padx=5)
+        
+        self.last_detection_label = tk.Label(
+            feedback_frame,
+            text="None",
+            fg="gray",
+            font=("Arial", 9)
+        )
+        self.last_detection_label.pack(side=tk.LEFT, padx=5)
+        
+        # Feedback buttons frame
+        feedback_buttons_frame = tk.Frame(self.root)
+        feedback_buttons_frame.pack(pady=5)
+        
+        self.good_btn = tk.Button(
+            feedback_buttons_frame,
+            text="✓ Good",
+            width=10,
+            command=self.feedback_good,
+            bg="#4CAF50",
+            fg="white",
+            font=("Arial", 9),
+            state="disabled"
+        )
+        self.good_btn.pack(side=tk.LEFT, padx=5)
+        
+        self.bad_btn = tk.Button(
+            feedback_buttons_frame,
+            text="✗ Bad",
+            width=10,
+            command=self.feedback_bad,
+            bg="#f44336",
+            fg="white",
+            font=("Arial", 9),
+            state="disabled"
+        )
+        self.bad_btn.pack(side=tk.LEFT, padx=5)
+        
+        # Feedback stats label
+        self.feedback_stats_label = tk.Label(
+            self.root,
+            text="Feedback: 0 good, 0 bad",
+            fg="gray",
+            font=("Arial", 7)
+        )
+        self.feedback_stats_label.pack(pady=2)
+        
         # Click position info
         self.click_pos_label = tk.Label(
             self.root, 
@@ -307,6 +371,61 @@ class ElementalAttackDetector:
             text=f"Elemental: {elemental_text} | Physical: {physical_text}",
             fg="green" if (self.elemental_detection_region or self.physical_detection_region) else "gray"
         )
+    
+    def feedback_good(self):
+        """Record positive feedback for the last detection"""
+        if self.last_detection:
+            number, mode, confidence, timestamp = self.last_detection
+            feedback_entry = {
+                'number': number,
+                'mode': mode,
+                'confidence': confidence,
+                'feedback': 'good',
+                'timestamp': timestamp
+            }
+            self.feedback_data.append(feedback_entry)
+            self.save_config()
+            self.update_feedback_stats()
+            self.good_btn.config(state="disabled")
+            self.bad_btn.config(state="disabled")
+            self.last_detection_label.config(text=f"Number {number} ({mode}) - ✓ Good feedback recorded!", fg="green")
+            print(f"[FEEDBACK] Good feedback recorded for {mode} number {number} (confidence: {confidence:.3f})")
+    
+    def feedback_bad(self):
+        """Record negative feedback for the last detection"""
+        if self.last_detection:
+            number, mode, confidence, timestamp = self.last_detection
+            feedback_entry = {
+                'number': number,
+                'mode': mode,
+                'confidence': confidence,
+                'feedback': 'bad',
+                'timestamp': timestamp
+            }
+            self.feedback_data.append(feedback_entry)
+            self.save_config()
+            self.update_feedback_stats()
+            self.good_btn.config(state="disabled")
+            self.bad_btn.config(state="disabled")
+            self.last_detection_label.config(text=f"Number {number} ({mode}) - ✗ Bad feedback recorded!", fg="red")
+            print(f"[FEEDBACK] Bad feedback recorded for {mode} number {number} (confidence: {confidence:.3f})")
+    
+    def update_feedback_stats(self):
+        """Update the feedback statistics display"""
+        good_count = sum(1 for entry in self.feedback_data if entry.get('feedback') == 'good')
+        bad_count = sum(1 for entry in self.feedback_data if entry.get('feedback') == 'bad')
+        self.feedback_stats_label.config(text=f"Feedback: {good_count} good, {bad_count} bad")
+    
+    def update_detection_ui(self, status_text, status_color, number, mode, confidence):
+        """Update the status label and enable feedback buttons"""
+        self.status_label.config(text=status_text, fg=status_color)
+        conf_str = f" (conf: {confidence:.2f})" if confidence > 0 else ""
+        self.last_detection_label.config(
+            text=f"Number {number} ({mode.capitalize()}){conf_str}",
+            fg=status_color
+        )
+        self.good_btn.config(state="normal")
+        self.bad_btn.config(state="normal")
         
     def start_elemental(self):
         if not self.running:
@@ -716,7 +835,11 @@ class ElementalAttackDetector:
         
         # Debug for physical mode
         if mode_name == "physical":
-            region_info = f"region=({x},{y},{w},{h})" if detection_region else "region=full screen"
+            if detection_region:
+                x, y, w, h = detection_region
+                region_info = f"region=({x},{y},{w},{h})"
+            else:
+                region_info = "region=full screen"
             print(f"[PHYSICAL DEBUG] Starting detection - templates: 6={len(templates_6)}, 5={len(templates_5)}, 4={len(templates_4)}, threshold={self.match_threshold:.3f}, {region_info}")
         
         # Priority order: 6, 5, 4
@@ -889,8 +1012,17 @@ class ElementalAttackDetector:
                         last_click_time = current_time
                         count = detection_count
                         conf_str = f" ({confidence:.2f})" if confidence > 0 else ""
-                        self.root.after(0, lambda c=count, n=detected_number, info=click_info: self.status_label.config(
-                            text=f"Elemental: Clicked! #{c} (Number {n}){conf_str}", fg="green"
+                        
+                        # Store last detection for feedback
+                        self.last_detection = (detected_number, "elemental", confidence, current_time)
+                        
+                        # Update UI with detection info and enable feedback buttons
+                        self.root.after(0, lambda c=count, n=detected_number, conf=confidence: self.update_detection_ui(
+                            f"Elemental: Clicked! #{c} (Number {n}){conf_str if conf > 0 else ''}",
+                            "green",
+                            n,
+                            "elemental",
+                            conf
                         ))
                     else:
                         print(f"[ERROR] Cannot click: detected={detected} but click_x={click_x}, click_y={click_y}")
@@ -957,8 +1089,17 @@ class ElementalAttackDetector:
                         last_click_time = current_time
                         count = detection_count
                         conf_str = f" ({confidence:.2f})" if confidence > 0 else ""
-                        self.root.after(0, lambda c=count, n=detected_number, info=click_info: self.status_label.config(
-                            text=f"Physical: Clicked! #{c} (Number {n}){conf_str}", fg="blue"
+                        
+                        # Store last detection for feedback
+                        self.last_detection = (detected_number, "physical", confidence, current_time)
+                        
+                        # Update UI with detection info and enable feedback buttons
+                        self.root.after(0, lambda c=count, n=detected_number, conf=confidence: self.update_detection_ui(
+                            f"Physical: Clicked! #{c} (Number {n}){conf_str if conf > 0 else ''}",
+                            "blue",
+                            n,
+                            "physical",
+                            conf
                         ))
                     else:
                         print(f"[ERROR] Cannot click: detected={detected} but click_x={click_x}, click_y={click_y}")
