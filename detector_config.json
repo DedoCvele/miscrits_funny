@@ -431,6 +431,188 @@
       "confidence": 0.9273239374160767,
       "feedback": "bad",
       "timestamp": 1766961828.0764356
+    },
+    {
+      "number": 6,
+      "mode": "elemental",
+      "confidence": 0.8793016076087952,
+      "feedback": "good",
+      "timestamp": 1771066998.7594523
+    },
+    {
+      "number": 6,
+      "mode": "elemental",
+      "confidence": 0.941460371017456,
+      "feedback": "bad",
+      "timestamp": 1771067026.0438912
+    },
+    {
+      "number": 6,
+      "mode": "elemental",
+      "confidence": 0.9515482187271118,
+      "feedback": "good",
+      "timestamp": 1771067056.8238523
+    },
+    {
+      "number": 6,
+      "mode": "elemental",
+      "confidence": 0.9138628840446472,
+      "feedback": "bad",
+      "timestamp": 1771067106.4139228
+    },
+    {
+      "number": 6,
+      "mode": "elemental",
+      "confidence": 0.9341830611228943,
+      "feedback": "bad",
+      "timestamp": 1771067242.2690568
+    },
+    {
+      "number": 6,
+      "mode": "elemental",
+      "confidence": 0.9249230623245239,
+      "feedback": "bad",
+      "timestamp": 1771067595.3550098
+    },
+    {
+      "number": 6,
+      "mode": "elemental",
+      "confidence": 0.9579650163650513,
+      "feedback": "good",
+      "timestamp": 1771068001.9752588
+    },
+    {
+      "number": 6,
+      "mode": "elemental",
+      "confidence": 0.9580309391021729,
+      "feedback": "good",
+      "timestamp": 1771068005.1103818
+    },
+    {
+      "number": 6,
+      "mode": "elemental",
+      "confidence": 0.9373412132263184,
+      "feedback": "bad",
+      "timestamp": 1771068273.4935195
+    },
+    {
+      "number": 6,
+      "mode": "elemental",
+      "confidence": 0.9300498366355896,
+      "feedback": "bad",
+      "timestamp": 1771068276.630202
+    },
+    {
+      "number": 6,
+      "mode": "elemental",
+      "confidence": 0.9240856766700745,
+      "feedback": "good",
+      "timestamp": 1771755111.345685
+    },
+    {
+      "number": 6,
+      "mode": "elemental",
+      "confidence": 0.9182527661323547,
+      "feedback": "good",
+      "timestamp": 1771755230.9656742
+    },
+    {
+      "number": 6,
+      "mode": "elemental",
+      "confidence": 0.9213077425956726,
+      "feedback": "good",
+      "timestamp": 1771755308.4898999
+    },
+    {
+      "number": 6,
+      "mode": "elemental",
+      "confidence": 0.9194247126579285,
+      "feedback": "bad",
+      "timestamp": 1771755918.0331194
+    },
+    {
+      "number": 6,
+      "mode": "elemental",
+      "confidence": 0.9327539801597595,
+      "feedback": "bad",
+      "timestamp": 1771756065.7035167
+    },
+    {
+      "number": 6,
+      "mode": "elemental",
+      "confidence": 0.930723249912262,
+      "feedback": "good",
+      "timestamp": 1771756252.0875418
+    },
+    {
+      "number": 6,
+      "mode": "elemental",
+      "confidence": 0.9206333160400391,
+      "feedback": "good",
+      "timestamp": 1771756255.2261267
+    },
+    {
+      "number": 6,
+      "mode": "elemental",
+      "confidence": 0.9321398138999939,
+      "feedback": "good",
+      "timestamp": 1771757101.8371615
+    },
+    {
+      "number": 6,
+      "mode": "elemental",
+      "confidence": 0.9391769766807556,
+      "feedback": "good",
+      "timestamp": 1771757403.5386071
+    },
+    {
+      "number": 6,
+      "mode": "elemental",
+      "confidence": 0.9348470568656921,
+      "feedback": "good",
+      "timestamp": 1771757645.8324618
+    },
+    {
+      "number": 6,
+      "mode": "elemental",
+      "confidence": 0.9247245192527771,
+      "feedback": "good",
+      "timestamp": 1771760094.4306476
+    },
+    {
+      "number": 6,
+      "mode": "elemental",
+      "confidence": 0.9470850825309753,
+      "feedback": "bad",
+      "timestamp": 1771768671.9326203
+    },
+    {
+      "number": 6,
+      "mode": "elemental",
+      "confidence": 0.9309590458869934,
+      "feedback": "good",
+      "timestamp": 1772621019.487186
+    },
+    {
+      "number": 6,
+      "mode": "elemental",
+      "confidence": 0.9248130321502686,
+      "feedback": "good",
+      "timestamp": 1772621623.2049623
+    },
+    {
+      "number": 6,
+      "mode": "elemental",
+      "confidence": 0.8568856120109558,
+      "feedback": "good",
+      "timestamp": 1772621626.3446808
+    },
+    {
+      "number": 6,
+      "mode": "elemental",
+      "confidence": 0.9172585606575012,
+      "feedback": "good",
+      "timestamp": 1774555837.2192996
     }
   ]
 }
